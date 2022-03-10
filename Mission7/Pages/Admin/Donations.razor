@@ -1,8 +1,39 @@
 ﻿@page "/admin/donations"
-@page "/admin"
+@inherits OwningComponentBase<IDonationRepository>
 
-<h3>Donations</h3>
+<DonationTable TableTitle="Uncollected Donations" Donations= "UncollectedDonations" ButtonLabel=" Collected" DonationSelected="CollectDonation"></DonationTable>
+
+<DonationTable TableTitle="Collected Donations" Donations="CollectedDonations" ButtonLabel="Collected" DonationSelected="ResetDonation"></DonationTable>
+
+<button class="btn btn-info" @onclick="@(x => UpdateData())">Refresh Data</button>
 
 @code {
 
+    public IDonationRepository repo => Service;
+
+    public IEnumerable<Donations> AllDonations { get; set; }
+    public IEnumerable<Donations> UncollectedDonations { get; set; }
+    public IEnumerable<Donations> CollectedDonations { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        await UpdateData();
+    }
+
+    public async Task UpdateData()
+    {
+        AllDonations =  repo.Donations.ToList();
+        UncollectedDonations = AllDonations.Where(x => !x.DonationReceived);
+        CollectedDonations = AllDonations.Where(x => x.DonationReceived);
+    }
+
+    public void CollectDonation(int id) => UpdateDonation(id, true);
+    public void ResetDonation(int id) => UpdateDonation(id, false);
+
+    private void UpdateDonation (int id, bool donated)
+    {
+        Donation d = repo.Donations.FirstOrDefault(x => x.DonationId == id);
+        d.DonationReceived = donated;
+        repo.SaveDonation(d);
+    }
 }
